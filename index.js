@@ -1,39 +1,86 @@
-const { createStore } = require("redux");
-const ADD_USER = "ADD_USER";
+const { default: axios } = require("axios");
+const { createStore, applyMiddleware } = require("redux");
+const thunk = require("redux-thunk").default;
 
-// state
-const initialCounterState = {
-  users: ["anis"],
-  count: 1,
+// constrains
+const GET_TODOS_REQUEST = "GET_TODOS_REQUEST";
+const GET_TODOS_SUCCESS = "GET_TODOS_SUCCESS";
+const GET_TODOS_FAILED = "GET_TODOS_FAILED";
+const API_URL = "https://jsonplaceholder.typicode.com/todos";
+
+// states
+const initialTodos = {
+  todos: [],
+  isLoading: false,
+  error: null,
 };
 
 // action
-const addUserAction = (user) => {
+const getTodosRequest = () => {
   return {
-    type: ADD_USER,
-    payload: user,
+    type: GET_TODOS_REQUEST,
+  };
+};
+const getTodosSuccess = (todos) => {
+  return {
+    type: GET_TODOS_SUCCESS,
+    payload: todos,
+  };
+};
+const getTodosFailed = (err) => {
+  return {
+    type: GET_TODOS_FAILED,
+    payload: err,
   };
 };
 
-// create reducer for counter
-const userReducer = (state = initialCounterState, action) => {
+// reducer
+const todosReducer = (state = initialTodos, action) => {
   switch (action.type) {
-    case ADD_USER:
+    case GET_TODOS_REQUEST:
       return {
-        user: [...state.users, action.payload],
-        count: state.count + 1,
+        ...state,
+        isLoading: true,
       };
+    case GET_TODOS_SUCCESS:
+      return {
+        ...state,
+        isLoading: false,
+        todos: action.payload,
+      };
+    case GET_TODOS_FAILED:
+      return {
+        ...state,
+        isLoading: false,
+        error: action.payload,
+      };
+
     default:
       state;
   }
 };
 
-// create a store getState(), dispatch(), subscribe()
-const store = createStore(userReducer);
+// async action
+const fetchData = () => {
+  return (dispatch) => {
+    dispatch(getTodosRequest());
+    axios
+      .get(API_URL)
+      .then((res) => {
+        console.log(res.data);
+      })
+      .catch((error) => {
+        console.log(error.message);
+      });
+  };
+};
+
+// store
+
+const store = createStore(todosReducer, applyMiddleware(thunk));
+
 store.subscribe(() => {
   console.log(store.getState());
 });
 
-//dispatch Action
-store.dispatch(addUserAction("Mahdi"));
-// store.dispatch(addUserAction("Soumik"));
+store.dispatch(fetchData());
